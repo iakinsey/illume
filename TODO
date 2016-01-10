@@ -1,0 +1,4 @@
+should on_stop be async too?
+implement actor
+implement queue
+write a test that hooks one actor into another
