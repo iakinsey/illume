@@ -86,9 +86,12 @@ class PersistentKeyFilter(object):
     def create_cursor(self):
         return self.conn.cursor()
 
-    def add(self, domain, url):
-        with self.conn:
-            self.conn.execute(INSERTER, (domain, url))
+    def add(self, domain, url, cursor=None):
+        if not cursor:
+            cursor = self.create_cursor()
+
+        # TODO This needs context management.
+        cursor.execute(INSERTER, (domain, url))
 
     def add_bulk(self, pairs):
         with self.conn:

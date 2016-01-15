@@ -1,4 +1,7 @@
+figure out how to calculate new bloom filter parameters
+handle bloom filter error rate exceeding bounds
+write tests for filter
 should on_stop be async too?
-implement actor
-implement queue
-write a test that hooks one actor into another
+make logging good
+url extractor actor
+fetcher actor
