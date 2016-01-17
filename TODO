@@ -3,5 +3,6 @@ handle bloom filter error rate exceeding bounds
 write tests for filter
 should on_stop be async too?
 make logging good
+metrics
 url extractor actor
 fetcher actor

@@ -2,6 +2,8 @@ from functools import partial
 from illume import config
 from illume.actor import Actor
 from illume.error import DatabaseCorrupt
+from illume.filter.bloom import BloomFilter
+from illume.filter.persistent_key_filter import PersistentKeyFilter
 from illume.log import log
 
 
@@ -13,36 +15,39 @@ class KeyFilter(Actor):
 
     def init_bloom_filters(self):
         self.url_bloom_filter = BloomFilter(
-            config.FRONTIER_URL_BLOOM_MAX_N,
-            config.FRONTIER_URL_BLOOM_P
+            config.get("FRONTIER_URL_BLOOM_MAX_N"),
+            config.get("FRONTIER_URL_BLOOM_P")
         )
 
         self.domain_bloom_filter = BloomFilter(
-            config.FRONTIER_DOMAIN_BLOOM_MAX_N,
-            config.FRONTIER_DOMAIN_BLOOM_P
+            config.get("FRONTIER_DOMAIN_BLOOM_MAX_N"),
+            config.get("FRONTIER_DOMAIN_BLOOM_P")
         )
 
     def init_persistent_key_filter(self):
-        self.key_filter_path = config.FRONTIER_DB_PATH
-        self.key_filter_size = config.FILTER_HASHER_KEY_SIZE
-        self.key_filter = KeyFilter(key_filter_path, key_filter_size)
-        self.cursor = self.key_filter.create_cursor()
+        self.key_filter_path = config.get("FRONTIER_KEY_FILTER_DB_PATH")
+        self.key_filter_size = config.get("FILTER_HASHER_KEY_SIZE")
+        self.persistent_key_filter = PersistentKeyFilter(
+            self.key_filter_path,
+            self.key_filter_size
+        )
+        self.cursor = self.persistent_key_filter.create_cursor()
         self.exists_url = partial(
             self._check_entity,
             bloom_filter=self.url_bloom_filter,
-            key_filter_fn=self.key_filter.exists_url
+            key_filter_fn=self.persistent_key_filter.exists_url
         )
         self.exists_domain = partial(
             self._check_entity,
             bloom_filter=self.domain_bloom_filter,
-            key_filter_fn=self.key_filter.exists_domain
+            key_filter_fn=self.persistent_key_filter.exists_domain
         )
 
     def populate_bloom_filters(self):
         # Take all data in the database and throw it into the bloom filter.
         pass
 
-    def on_message(self, message):
+    async def on_message(self, message):
         url = message['url']
         domain = message['domain']
         override_filter = message.get('override', None)
@@ -63,7 +68,7 @@ class KeyFilter(Actor):
         should_add = self._should_add(domain_is_known, url_is_known)
 
         if should_add:
-            self.key_filter.add(domain, url, cursor=self.cursor)
+            self.persistent_key_filter.add(domain, url, cursor=self.cursor)
             should_publish = True
 
             if not domain_is_known:
@@ -78,7 +83,7 @@ class KeyFilter(Actor):
             log.warn(warning.format(domain, url))
 
             # Correct the error.
-            self.key_filter.add(domain, url, cursor=self.cursor)
+            self.persistent_key_filter.add(domain, url, cursor=self.cursor)
             self.domain_bloom_filter.add(domain)
 
             # Publish anyway
@@ -87,7 +92,7 @@ class KeyFilter(Actor):
         if should_publish:
             priority = self._get_priority(domain_is_known, url_is_known, message)
             message['fetch_priority'] = priority
-            self.publish(message)
+            await self.publish(message)
 
         # TODO If the bloom filter exceeds it's maximum size or error rate, a
         # new one is created and the bloom filter is reindexed. A warning is
@@ -102,7 +107,7 @@ class KeyFilter(Actor):
         if user_inputted:
             return 1
         # Override was set or the domain is unknown.
-        elif override and not domain_is_known:
+        elif override or not domain_is_known:
             return 2
         elif recrawl:
             return 4

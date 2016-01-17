@@ -64,7 +64,7 @@ class PersistentKeyFilter(object):
         if not db_exists:
             # Database needs to be set up.
             self._create_db()
-        elif not self.check_if_tables_exist():
+        elif not self._check_if_tables_exist():
             # Database is corrupt.
             raise DatabaseCorrupt("Tables out of sync.")
 

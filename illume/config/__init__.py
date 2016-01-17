@@ -4,7 +4,7 @@ Configuration management.
 Environment must be set before use.
 
 Call .get() to obtain configuration variable. If the variable does not exist
-in the set environment, then 
+in the set environment, then
 """
 
 
@@ -61,10 +61,10 @@ class Config:
             raise AttributeError(self.no_config_err.format(name))
         elif value == EMPTY and self.fallback:
             value = getattr(self.base, name, default)
-            
+
             if value == EMPTY:
                 raise AttributeError(self.no_config_err.format(name))
-            
+
             return value
 
 
