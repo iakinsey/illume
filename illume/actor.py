@@ -4,7 +4,7 @@ Base classes and methods for actors.
 """
 
 
-from asyncio import coroutine, Queue, get_event_loop, Lock
+from asyncio import coroutine, Queue, get_event_loop, Lock, wait, Event, FIRST_COMPLETED
 
 
 class ActorManager(object):
@@ -35,15 +35,13 @@ class Actor(object):
 
         self._loop = loop
         self._pause_lock = Lock(loop=self._loop)
+        self._stop_event = Event(loop=self._loop)
 
         self.on_init()
 
     @property
     def paused(self):
         return self._pause_lock.locked()
-
-    async def _get_next(self):
-        return await self.inbox.get()
 
     async def _get_command(self):
         return await self._command_inbox.get()
@@ -59,9 +57,6 @@ class Actor(object):
         try:
             await self._run()
         finally:
-            #if not self._stopped_manually:
-            #    await self.stop()
-
             await self.on_stop()
 
     async def resume(self):
@@ -82,6 +77,7 @@ class Actor(object):
     async def _run(self):
         while self.running:
             self._block_if_paused()
+
             await self._process()
 
     async def publish(self, data):
@@ -102,11 +98,26 @@ class Actor(object):
         self.outbox = None
         self.running = False
 
+        self._stop_event.set()
+
+        try:
+            self._pause_lock.release()
+        except RuntimeError:
+            pass
+
     async def _process(self):
         """Process incoming messages."""
-        # TODO, what if the actor is paused and we're blocking here?
-        data = await self.inbox.get()
-        await self.on_message(data)
+        pending = {self.inbox.get(), self._stop_event.wait()}
+        done, pending = await wait(pending, return_when=FIRST_COMPLETED, loop=self._loop)
+
+        for task in pending:
+            task.cancel()
+
+        # Assumes that pending only has two items.
+        future = done.pop()
+
+        if self.running:
+            await self.on_message(future.result())
 
     async def on_message(self, data):
         """Called when the actor receives a message"""

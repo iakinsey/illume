@@ -32,16 +32,6 @@ class KeyFilter(Actor):
             self.key_filter_size
         )
         self.cursor = self.persistent_key_filter.create_cursor()
-        self.exists_url = partial(
-            self._check_entity,
-            bloom_filter=self.url_bloom_filter,
-            key_filter_fn=self.persistent_key_filter.exists_url
-        )
-        self.exists_domain = partial(
-            self._check_entity,
-            bloom_filter=self.domain_bloom_filter,
-            key_filter_fn=self.persistent_key_filter.exists_domain
-        )
 
     def populate_bloom_filters(self):
         # Take all data in the database and throw it into the bloom filter.
@@ -50,16 +40,24 @@ class KeyFilter(Actor):
     async def on_message(self, message):
         url = message['url']
         domain = message['domain']
-        override_filter = message.get('override', None)
+        override = message.get('override', False)
+        recrawl = message.get('recrawl', False)
 
         domain_is_known = self.exists_domain(domain)
         url_is_known = False
-        should_publush = True
+        should_publish = recrawl or override
 
         if domain_is_known:
-            url_is_known = self.exists_url(url)
+            url_is_known = self.exists_url(domain, url)
 
-        if domain_is_known and url_is_known and not override_filter:
+        should_ignore = self._should_ignore(
+            domain_is_known,
+            url_is_known,
+            override,
+            recrawl
+        )
+
+        if should_ignore:
             return
 
         if not domain_is_known:
@@ -76,22 +74,11 @@ class KeyFilter(Actor):
 
             if not url_is_known:
                 self.url_bloom_filter.add(url)
-        # Anomalous behaviour, this shouldn't happen.
-        elif not domain_is_known and url_is_known:
-            # Trigger a warning.
-            warning = "Domain {} unknown while url {} is known."
-            log.warn(warning.format(domain, url))
-
-            # Correct the error.
-            self.persistent_key_filter.add(domain, url, cursor=self.cursor)
-            self.domain_bloom_filter.add(domain)
-
-            # Publish anyway
-            should_publish = True
 
         if should_publish:
             priority = self._get_priority(domain_is_known, url_is_known, message)
             message['fetch_priority'] = priority
+            open("thingy", "a").write(__import__("json").dumps(message) + "\n")
             await self.publish(message)
 
         # TODO If the bloom filter exceeds it's maximum size or error rate, a
@@ -100,14 +87,13 @@ class KeyFilter(Actor):
 
     def _get_priority(self, domain_is_known, url_is_known, message):
         override = message.get("override", None)
-        user_inputted = message.get("user_inputted", None)
         recrawl = message.get("recrawl", None)
 
         # User manually inputted this entity.
-        if user_inputted:
+        if override:
             return 1
         # Override was set or the domain is unknown.
-        elif override or not domain_is_known:
+        elif not domain_is_known:
             return 2
         elif recrawl:
             return 4
@@ -125,10 +111,43 @@ class KeyFilter(Actor):
             ))
         ))
 
-    def _check_entity(self, entity, bloom_filter, key_filter_fn):
+    def _should_ignore(self, domain_is_known, url_is_known, override, recrawl):
+        return all((
+            domain_is_known,
+            url_is_known,
+            not any((
+                override,
+                recrawl
+            ))
+        ))
+
+    def check_entity(self, entity, bloom_filter, key_filter_fn):
         entity_known = entity in bloom_filter
 
         if entity_known:
             return key_filter_fn(entity, cursor=self.cursor)
 
         return entity_known
+
+    def exists_domain(self, domain):
+        domain_known = domain in self.domain_bloom_filter
+
+        if domain_known:
+            return self.persistent_key_filter.exists_domain(
+                domain,
+                cursor=self.cursor
+            )
+
+        return domain_known
+
+    def exists_url(self, domain, url):
+        url_known = url in self.url_bloom_filter
+
+        if url_known:
+            return self.persistent_key_filter.exists_url(
+                domain,
+                url,
+                cursor=self.cursor
+            )
+
+        return url_known
