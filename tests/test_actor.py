@@ -3,30 +3,9 @@
 from asyncio import new_event_loop, gather, Queue as AsyncIOQueue
 from illume.actor import Actor
 from illume.queues.base import AsyncQueue
+from illume.test.assertions import check_queue
+from illume.test.actor import ActorTestable
 from queue import Queue
-
-
-def check_queue(queue, item):
-    data = queue.get(timeout=1)
-
-    assert data == item
-
-
-class ActorTestable(Actor):
-
-    """
-    Actor that can be used during testing. The `running` variable switches
-    whenever accessed so that the actor coroutine can return control of
-    the execution context without blocking.
-    """
-
-    _running = False
-
-    @property
-    def running(self):
-        self._running = not self._running
-
-        return self._running
 
 
 class TestActor:

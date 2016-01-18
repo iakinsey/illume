@@ -1,3 +1,5 @@
+test fixture for http server
+move mock actors into utility
 figure out how to calculate new bloom filter parameters
 handle bloom filter error rate exceeding bounds
 write tests for filter
