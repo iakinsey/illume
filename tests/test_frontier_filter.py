@@ -8,7 +8,7 @@ from pytest import raises
 
 def mock_actor(cls, count):
     """
-    Wrap the actor so that it stops itself after the first message is received.
+    Wrap the actor so that it stops itself after n messages received.
     """
 
     counter = {'count': 0}

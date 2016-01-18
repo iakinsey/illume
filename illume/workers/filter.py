@@ -1,3 +1,6 @@
+"""URL/Domain filter crawler component"""
+
+
 from functools import partial
 from illume import config
 from illume.actor import Actor
@@ -8,6 +11,9 @@ from illume.log import log
 
 
 class KeyFilter(Actor):
+
+    """Frontier url/domain filter actor."""
+
     def on_init(self):
         self.init_bloom_filters()
         self.init_persistent_key_filter()

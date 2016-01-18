@@ -6,3 +6,5 @@ make logging good
 metrics
 url extractor actor
 fetcher actor
+prioritize new TLD over new netloc
+handle 300 codes

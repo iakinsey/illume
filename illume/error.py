@@ -62,3 +62,17 @@ class QueueClosed(IllumeException):
     """Can't complete operation on closed queue."""
 
     code = 8
+
+
+class NetlocMismatch(IllumeException):
+
+    """Domain netloc does not match url netloc."""
+
+    code = 9
+
+
+class ReadTimeout(IllumeException):
+
+    """Socket read took too long."""
+
+    code = 10
