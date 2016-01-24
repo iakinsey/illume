@@ -10,3 +10,4 @@ url extractor actor
 fetcher actor
 prioritize new TLD over new netloc
 handle 300 codes
+messages should have the ability to specify a return address
