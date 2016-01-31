@@ -76,3 +76,10 @@ class ReadTimeout(IllumeException):
     """Socket read took too long."""
 
     code = 10
+
+
+class ReadCutoff(IllumeException):
+
+    """Response data too large."""
+
+    code = 11

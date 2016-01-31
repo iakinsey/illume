@@ -1,5 +1,4 @@
-test fixture for http server
-move mock actors into utility
+NOTE: link parser must be able to decode gzip/deflate
 figure out how to calculate new bloom filter parameters
 handle bloom filter error rate exceeding bounds
 write tests for filter

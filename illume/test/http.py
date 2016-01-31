@@ -3,6 +3,7 @@ from illume.test.error import TestFailure
 from json import dumps, loads
 from multiprocessing import Process, Queue
 from signal import SIGKILL
+from ssl import create_default_context
 from os import kill
 from queue import Empty
 from time import sleep
@@ -10,6 +11,7 @@ from time import sleep
 
 TEST_HTTP_HOST = "localhost"
 TEST_HTTP_PORT = 9090
+TEST_HTTPS_PORT = 9191
 
 
 class TestHTTPServer(HTTPServer):
@@ -27,18 +29,100 @@ class TestHTTPServer(HTTPServer):
 
 
 class TestHandler(SimpleHTTPRequestHandler):
-    def do_GET(self):
-        return_value = dumps(dict(self.headers)).encode("latin-1")
-        self.send_response(200)
-        self.send_header("Content-length", len(return_value))
+    def dump_headers(self):
+        headers = dict(self.headers)
+        return_value = {"request_headers": headers}
+        content_length = int(self.headers.get("Content-Length", 0))
+        resp_code = int(self.headers.get("Requested-Response-Code", 200))
+
+        self.send_response(resp_code)
+
+        if self.command == 'POST':
+            self.send_header("Was-post", 1)
+
+            if content_length:
+                content_length = int(content_length)
+                request_body = self.rfile.read(content_length)
+                request_body = str(request_body, encoding="utf-8")
+                return_value['request_body'] = request_body
+        elif self.command == 'GET':
+            self.send_header("Was-get", 1)
+        elif self.command == 'HEAD':
+            self.send_header("Was-head", 1)
+
+        payload = dumps(return_value).encode("latin-1")
+        self.send_header("Content-length", len(payload))
         self.end_headers()
-        self.wfile.write(return_value)
+        self.wfile.write(payload)
+        self.wfile.flush()
+
+    def do_slow_request(self):
+        sleep_time = int(self.headers.get('Sleep-Time', 5))
+
+        sleep(sleep_time)
+        self.dump_headers()
+
+    def do_long_request(self):
+        size = int(self.headers.get('Response-Size', 1024))
+        payload = "".join(str(i) for i in range(size)).encode("latin-1")
+
+        self.send_response(200)
+        self.send_header("Content-length", len(payload))
+        self.end_headers()
+        self.wfile.write(payload)
+        self.end_headers()
+
+    def do_long_header(self):
+        size = int(self.headers.get('Header-Size', 1024))
+        payload = "{}"
+        self.send_response(200)
+        self.send_header("Long", "".join(str(i) for i in range(size)))
+        self.end_headers()
+        self.wfile.write(payload)
+        self.end_headers()
+
+    def do_invalid_header(self):
+        self.wfile.write(''.join(str(i) for i in range(100)).encode('latin-1'))
+        self.wfile.write(b'\r\n')
+
+    def do_unicode_request(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.end_headers()
+        payload = "科学の限界を超えて私は来たんだよ"
+        self.wfile.write(payload.encode("utf-8"))
+        self.end_headers()
+
+    def do_GET(self):
+        if self.path == '/':
+            self.dump_headers()
+        elif self.path == '/malformed-header':
+            pass
+        elif self.path == '/slow-request':
+            self.do_slow_request()
+        elif self.path == '/long-request':
+            self.do_long_request()
+        elif self.path == '/long-header':
+            self.do_long_header()
+        elif self.path == '/invalid-header':
+            self.do_invalid_header()
+        elif self.path == '/unicode-request':
+            self.do_unicode_request()
+
+    def do_POST(self):
+        self.dump_headers()
+
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header("Was-head", 1)
+        self.end_headers()
         self.wfile.flush()
 
 
 def start_test_http_server(host=TEST_HTTP_HOST, port=TEST_HTTP_PORT, queue=None):
     address = (host, port)
     httpd = TestHTTPServer(address, TestHandler, queue=queue)
+
     httpd.serve_forever()
 
 

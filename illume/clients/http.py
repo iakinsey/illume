@@ -1,15 +1,54 @@
-
 """HTTP/HTTPS client."""
 
 
 from asyncio import open_connection, get_event_loop, FIRST_COMPLETED, sleep
 from asyncio import wait
+from functools import wraps
 from hashlib import md5
+from http.client import HTTPResponse, HTTPException
+from illume.error import ReadTimeout, ReadCutoff
 from io import BytesIO
 from urllib.parse import urlsplit
 
 
 CRLF_LINE = b'\r\n'
+
+
+class FakeSocket:
+    def __init__(self, response_buffer):
+        self._file = response_buffer
+
+    def makefile(self, *args, **kwargs):
+        return self._file
+
+
+def parse_http_response(buf):
+    src = FakeSocket(buf)
+    resp = HTTPResponse(src)
+    resp.begin()
+
+    return resp
+
+
+class header_property:
+    def __init__(self, raises):
+        self.raises = raises
+
+    def __call__(self, fn):
+        data = {}
+
+        @wraps(fn)
+        def func(cls, *args, **kwargs):
+            success, header = cls._get_header_state()
+
+            if not success and self.raises:
+                raise val
+
+            data['val'] = fn(cls, *args, **kwargs)
+
+            return data['val']
+
+        return property(func)
 
 
 class HTTPRequest:
@@ -18,12 +57,16 @@ class HTTPRequest:
     Represents a single HTTP transaction.
     """
 
+    _header_state = None
+
     def __init__(
         self,
         url,
         writer,
         method="GET",
         timeout=10,
+        max_response_size=1048576, # 1 MB
+        max_header_size=8192, # 8 KB
         request_body=None,
         headers=None,
         loop=None
@@ -34,6 +77,8 @@ class HTTPRequest:
         self.request_body = request_body
         self.headers = headers
         self.timeout = timeout
+        self.max_response_size = max_response_size
+        self.max_header_size = max_header_size
         self._md5 = md5()
         self.header_buffer = BytesIO()
 
@@ -76,14 +121,24 @@ class HTTPRequest:
                 if line == CRLF_LINE:
                     reading_header = False
                     self.header_buffer.seek(0)
+
+                    if self.method == 'HEAD':
+                        break
                 else:
                     self.header_buffer.write(line)
+
+                if self.header_buffer.tell() >= self.max_header_size:
+                    raise ReadCutoff("Header too large.")
             else:
                 self._md5.update(line)
+                # TODO use add_writer instead
                 self.writer.write(line)
 
+                if self.writer.tell() >= self.max_response_size:
+                    raise ReadCutoff("Response body too large.")
+
     async def get_bytes(self, reader):
-        timeout_coro = sleep(self.timeout)
+        timeout_coro = sleep(self.timeout, loop=self._loop)
         reader_coro = reader.readline()
         pending = timeout_coro, reader_coro
 
@@ -103,9 +158,34 @@ class HTTPRequest:
         else:
             return future.result()
 
-    @property
+    @header_property(raises=True)
     def response_code(self):
-        raise NotImplementedError
+        return self._response.status
+
+    @header_property(raises=True)
+    def response_headers(self):
+        return dict(self._response.headers)
+
+    @header_property(raises=False)
+    def headers_valid(self):
+        success, exc = self._get_header_state()
+
+        return success
+
+    def _get_header_state(self):
+        if self._header_state:
+            return self._header_state
+
+        self.header_buffer.seek(0)
+
+        try:
+            self._response = parse_http_response(self.header_buffer)
+        except Exception as e:
+            self._header_state = False, e
+        else:
+            self._header_state = True, self._response
+
+        return self._header_state
 
     @property
     def md5_hash(self):
