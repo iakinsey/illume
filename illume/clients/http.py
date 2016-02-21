@@ -39,7 +39,7 @@ class header_property:
 
         @wraps(fn)
         def func(cls, *args, **kwargs):
-            success, header = cls._get_header_state()
+            success, val = cls._get_header_state()
 
             if not success and self.raises:
                 raise val

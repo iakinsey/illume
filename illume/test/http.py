@@ -7,11 +7,18 @@ from ssl import create_default_context
 from os import kill
 from queue import Empty
 from time import sleep
+from urllib.parse import urljoin
 
 
 TEST_HTTP_HOST = "localhost"
 TEST_HTTP_PORT = 9090
 TEST_HTTPS_PORT = 9191
+
+
+def generate_url(proto="http", path=""):
+    base = "{}://{}:{}".format(proto, TEST_HTTP_HOST, TEST_HTTP_PORT)
+
+    return urljoin(base, path)
 
 
 class TestHTTPServer(HTTPServer):

@@ -5,17 +5,11 @@ from asyncio import new_event_loop
 from illume.clients.http import HTTPRequest
 from illume.error import ReadTimeout, ReadCutoff
 from illume.test.http import start_http_process, stop_http_process
-from illume.test.http import TEST_HTTP_HOST, TEST_HTTP_PORT
+from illume.test.http import generate_url, TEST_HTTP_HOST, TEST_HTTP_PORT
 from json import loads, dumps
 from io import BytesIO
 from pytest import fixture, raises
 from urllib.parse import urljoin
-
-
-def generate_url(proto="http", path=""):
-    base = "{}://{}:{}".format(proto, TEST_HTTP_HOST, TEST_HTTP_PORT)
-
-    return urljoin(base, path)
 
 
 class TestHTTPClient:
