@@ -70,11 +70,11 @@ class TestActor:
                 "recrawl": True
             }
 
-            await inbox.put(unknown)
-            await inbox.put(unknown)
-            await inbox.put(known)
-            await inbox.put(override)
-            await inbox.put(recrawl)
+            await inbox.put({"urls": [unknown]})
+            await inbox.put({"urls": [unknown]})
+            await inbox.put({"urls": [known]})
+            await inbox.put({"urls": [override]})
+            await inbox.put({"urls": [recrawl]})
 
             await key_filter.start()
 

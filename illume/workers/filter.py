@@ -44,10 +44,16 @@ class KeyFilter(Actor):
         pass
 
     async def on_message(self, message):
-        url = message['url']
-        domain = message['domain']
-        override = message.get('override', False)
-        recrawl = message.get('recrawl', False)
+        urls = message.get("urls", [])
+
+        for url in urls:
+            await self.handle_url(url)
+
+    async def handle_url(self, url_map):
+        url = url_map['url']
+        domain = url_map['domain']
+        override = url_map.get('override', False)
+        recrawl = url_map.get('recrawl', False)
 
         domain_is_known = self.exists_domain(domain)
         url_is_known = False
@@ -82,18 +88,17 @@ class KeyFilter(Actor):
                 self.url_bloom_filter.add(url)
 
         if should_publish:
-            priority = self._get_priority(domain_is_known, url_is_known, message)
-            message['fetch_priority'] = priority
-            open("thingy", "a").write(__import__("json").dumps(message) + "\n")
-            await self.publish(message)
+            priority = self._get_priority(domain_is_known, url_is_known, url_map)
+            url_map['fetch_priority'] = priority
+            await self.publish(url_map)
 
         # TODO If the bloom filter exceeds it's maximum size or error rate, a
         # new one is created and the bloom filter is reindexed. A warning is
         # triggered with the new values.
 
-    def _get_priority(self, domain_is_known, url_is_known, message):
-        override = message.get("override", None)
-        recrawl = message.get("recrawl", None)
+    def _get_priority(self, domain_is_known, url_is_known, url_map):
+        override = url_map.get("override", None)
+        recrawl = url_map.get("recrawl", None)
 
         # User manually inputted this entity.
         if override:

@@ -97,6 +97,6 @@ class TestFileAnalyzer:
         ]
 
         for origin_metadata, url, expected in urls:
-            url = actor.parse_url(origin_metadata, url)
+            url, domain = actor.parse_url(origin_metadata, url)
 
             assert expected == url, "Parsed url should match expected"

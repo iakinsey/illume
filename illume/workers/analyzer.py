@@ -45,7 +45,11 @@ class FileAnalyzer(Actor):
         origin_metadata = urlsplit(origin_url)
 
         for url in urls:
-            result.append(self.parse_url(origin_metadata, url))
+            url, domain = self.parse_url(origin_metadata, url)
+            result.append({
+                "url": url,
+                "domain": domain
+            })
 
         return result
 
@@ -93,4 +97,4 @@ class FileAnalyzer(Actor):
         else:
             tokens[FRAGMENT] = quote(tokens[FRAGMENT], safe=LEGAL_URL_CHARS)
 
-        return urlunsplit(tokens)
+        return urlunsplit(tokens), tokens[NETLOC]
