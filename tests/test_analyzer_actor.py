@@ -12,6 +12,9 @@ from urllib.parse import urlsplit
 
 
 class TestFileAnalyzer:
+
+    """Test file analyzer actor."""
+
     @fixture
     def loop(self):
         return new_event_loop()
