@@ -8,7 +8,7 @@ from illume.parse.link_fsm import DocumentReaderFsm
 from io import StringIO
 from os import listdir
 from os.path import exists, join
-from pytest import fail, fixture, raises
+from pytest import fail, raises
 
 
 class TestUrlExtractors:

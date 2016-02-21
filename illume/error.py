@@ -83,3 +83,10 @@ class ReadCutoff(IllumeException):
     """Response data too large."""
 
     code = 11
+
+
+class FileNotFound(IllumeException):
+
+    """File does not exist."""
+
+    code = 12

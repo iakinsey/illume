@@ -1,6 +1,14 @@
 """Implements a finite state machine that extracts URLs from a stream."""
 
 
+LEGAL_URL_CHARS = (
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    "abcdefghijklmnopqrstuvwxyz"
+    "0123456789"
+    "-._~:/?#[]@!$%&'()*+,;="
+)
+
+
 class FSMExit(Exception):
     """Raise this exception to gracefully exit from the FSM."""
     pass
@@ -209,12 +217,7 @@ class LinkReaderFsm(FSM):
     final_http_suffix = ':'
     double_forward_slash = "//"
     follows_http = https_suffix + final_http_suffix
-    legal_url_chars = (
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "abcdefghijklmnopqrstuvwxyz"
-        "0123456789"
-        "-._~:/?#[]@!$%&'()*+,;="
-    )
+    legal_url_chars = LEGAL_URL_CHARS
 
     @property
     def initial_state(self):
