@@ -90,3 +90,10 @@ class FileNotFound(IllumeException):
     """File does not exist."""
 
     code = 12
+
+
+class ParseError(IllumeException):
+
+    """Error occurred when parsing."""
+
+    code = 13

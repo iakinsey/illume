@@ -26,7 +26,7 @@ class FileAnalyzer(Actor):
 
     async def on_message(self, message):
         path = message.get("path", None)
-        origin = message.get("domain", None)
+        origin = message.get("url", None)
 
         if not exists(path):
             raise FileNotFound(path)

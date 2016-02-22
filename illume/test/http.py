@@ -100,6 +100,23 @@ class TestHandler(SimpleHTTPRequestHandler):
         self.wfile.write(payload.encode("utf-8"))
         self.end_headers()
 
+    def do_urls_request(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.end_headers()
+
+        counter = int(self.path.split("-")[1]) + 1
+
+        payload = "".join("""
+            <html>
+                <body>
+                    <a href="/urls-{}">Link</a>
+                </body>
+            </html>
+        """.format(counter).split())
+        self.wfile.write(payload.encode("utf-8"))
+        self.end_headers()
+
     def do_GET(self):
         if self.path == '/':
             self.dump_headers()
@@ -115,6 +132,8 @@ class TestHandler(SimpleHTTPRequestHandler):
             self.do_invalid_header()
         elif self.path == '/unicode-request':
             self.do_unicode_request()
+        elif self.path.startswith('/urls-'):
+            self.do_urls_request()
 
     def do_POST(self):
         self.dump_headers()

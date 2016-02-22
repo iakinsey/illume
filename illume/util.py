@@ -2,7 +2,7 @@
 
 from errno import ENOENT, EEXIST
 from illume.error import InsufficientMemory, AllocationValueError
-from os import makedirs
+from os import makedirs, remove
 from psutil import virtual_memory
 from shutil import rmtree
 
@@ -20,6 +20,16 @@ def remove_or_ignore_dir(path):
     """Remove a directory if it exists."""
     try:
         rmtree(path)
+    except OSError as e:
+        if e.errno != ENOENT:
+            raise
+
+
+def remove_or_ignore_file(path):
+    """Remove a file if it exists, do nothing if it doesn't exist."""
+
+    try:
+        remove(path)
     except OSError as e:
         if e.errno != ENOENT:
             raise

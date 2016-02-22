@@ -2,6 +2,8 @@
 
 
 from asyncio import new_event_loop, QueueEmpty, Queue as AsyncIOQueue
+from illume import config
+from illume.util import  remove_or_ignore_file
 from illume.workers.filter import KeyFilter
 from pytest import raises
 
@@ -36,6 +38,9 @@ def setup_filter(count):
 
 
 class TestActor:
+    def setup_method(self, method):
+        remove_or_ignore_file(config.get("FRONTIER_KEY_FILTER_DB_PATH"))
+
     def test_filter_init(self):
         key_filter = KeyFilter(None, None)
 

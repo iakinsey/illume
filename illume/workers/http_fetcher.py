@@ -69,7 +69,6 @@ class HTTPFetcher(Actor):
             result['http_code'] = client.response_code
 
         move(progress_path, destination_path)
-
         await self.publish(result)
 
     def get_unique_file_name(self):

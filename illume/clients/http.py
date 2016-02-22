@@ -6,7 +6,7 @@ from asyncio import wait
 from functools import wraps
 from hashlib import md5
 from http.client import HTTPResponse, HTTPException
-from illume.error import ReadTimeout, ReadCutoff
+from illume.error import ReadTimeout, ReadCutoff, ParseError
 from io import BytesIO
 from urllib.parse import urlsplit
 
@@ -74,7 +74,7 @@ class HTTPRequest:
         self.url = url
         self.method = method
         self.writer = writer
-        self.request_body = request_body
+        self.request_body = request_body or ""
         self.headers = headers
         self.timeout = timeout
         self.max_response_size = max_response_size
@@ -102,6 +102,7 @@ class HTTPRequest:
             ssl=self.ssl,
             loop=self._loop
         )
+
         reader, writer = await conn
         writer.write(self.http_query)
 
@@ -218,7 +219,6 @@ class HTTPRequest:
 
     def parse_url(self, url):
         split_result = urlsplit(url)
-
         hostname = split_result.hostname
         port = split_result.port
         scheme = split_result.scheme
@@ -231,5 +231,8 @@ class HTTPRequest:
             port = 80
         elif scheme == "https" and no_port:
             port = 443
+
+        if hostname is None:
+            raise ParseError("No hostname specified in URL.")
 
         return netloc, hostname, port, path, ssl
