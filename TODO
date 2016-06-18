@@ -1,12 +1,25 @@
 NOTE: link parser must be able to decode gzip/deflate
 figure out how to calculate new bloom filter parameters
 handle bloom filter error rate exceeding bounds
+bloom filter reindex
 write tests for filter
-should on_stop be async too?
 make logging good
 metrics
-url extractor actor
-fetcher actor
 prioritize new TLD over new netloc
 handle 300 codes
 messages should have the ability to specify a return address
+    - Pass multiple mailboxes into an actor
+    - Actor has a naming interface for mailboxes and can specify mailbox
+      requirements.
+
+What about a different model.
+
+The supervisor is a greenlet that respawns tasks when necessary within the
+process itself. You use the call_soon + await trick with a loop that runs forever.
+
+The supervisor reports to the parent queue every few seconds, and the process
+has the ability to notify the child supervisor to terminate itself.
+
+The inbox remains as an important question, how to the actors get their data?
+
+There needs to be a queue implementation that supports IPC

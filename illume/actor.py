@@ -4,7 +4,8 @@ Base classes and methods for actors.
 """
 
 
-from asyncio import coroutine, Queue, get_event_loop, Lock, wait, Event, FIRST_COMPLETED
+from asyncio import coroutine, Queue, get_event_loop, Lock, wait, Event
+from asyncio import FIRST_COMPLETED
 
 
 class ActorManager(object):
@@ -76,7 +77,7 @@ class Actor(object):
 
     async def _run(self):
         while self.running:
-            self._block_if_paused()
+            await self._block_if_paused()
 
             await self._process()
 
@@ -107,6 +108,9 @@ class Actor(object):
 
     async def _process(self):
         """Process incoming messages."""
+        if not self.inbox:
+            return
+
         pending = {self.inbox.get(), self._stop_event.wait()}
         done, pending = await wait(pending, return_when=FIRST_COMPLETED, loop=self._loop)
 

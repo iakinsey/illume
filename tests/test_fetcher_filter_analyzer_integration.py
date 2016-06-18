@@ -103,9 +103,3 @@ class TestFetcherFilterAnalyzerIntegration:
             assert int(result['urls'][0]['url'].split('-')[-1]) == rounds + 1
 
         loop.run_until_complete(perform())
-
-    def test_pooling(self, loop):
-        pass
-
-    def test_integration_with_pooling(self, loop):
-        pass

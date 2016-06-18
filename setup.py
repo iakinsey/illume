@@ -61,6 +61,10 @@ setup(
     cmdclass = {'test': RunTests},
     ext_modules=extensions,
     install_requires=[
-
+        'bitarray==0.8.1',
+        'psutil==4.1.0',
+        'py==1.4.31',
+        'pytest==2.9.1',
+        'xxhash==0.5.0'
     ]
 )

@@ -97,3 +97,17 @@ class ParseError(IllumeException):
     """Error occurred when parsing."""
 
     code = 13
+
+
+class QueueError(IllumeException):
+
+    """Error occurred with queue."""
+
+    code = 14
+
+
+class NoSuchOperation(IllumeException):
+
+    """No such operation exists."""
+
+    code = 15
