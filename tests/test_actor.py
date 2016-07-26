@@ -1,5 +1,6 @@
 """Test actor."""
 
+
 from asyncio import new_event_loop, gather, Queue as AsyncIOQueue
 from illume.actor import Actor
 from illume.queues.base import AsyncQueue

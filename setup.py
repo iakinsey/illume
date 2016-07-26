@@ -23,6 +23,9 @@ class RunTests(test):
 
         from pytest import main
         from illume.util import remove_or_ignore_dir
+        from logging import basicConfig, DEBUG
+
+        basicConfig(level=DEBUG, filename="illume-test.log")
 
         test_dir = config.get("TEST_DIR")
         data_dir = config.get("DATA_DIR")

@@ -26,6 +26,7 @@ class ActorManager(object):
 
 class Actor(object):
     running = False
+    _force_stop = False
 
     def __init__(self, inbox, outbox, loop=None):
         self.inbox = inbox
@@ -37,6 +38,8 @@ class Actor(object):
         self._loop = loop
         self._pause_lock = Lock(loop=self._loop)
         self._stop_event = Event(loop=self._loop)
+        self._test = None
+        self.__testy = None
 
         self.on_init()
 
@@ -51,6 +54,9 @@ class Actor(object):
         # TODO, maybe this guy just reschedules himself every time
         # instead of running in a loop?
         await self.on_start()
+
+        if self._force_stop:
+            return
 
         if not self.running:
             self.running = True
@@ -98,6 +104,7 @@ class Actor(object):
         self.inbox = None
         self.outbox = None
         self.running = False
+        self._force_stop = True
 
         self._stop_event.set()
 
