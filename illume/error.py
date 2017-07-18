@@ -111,3 +111,9 @@ class NoSuchOperation(IllumeException):
     """No such operation exists."""
 
     code = 15
+
+class TaskComplete(IllumeException):
+
+    """Task has completed execution."""
+
+    code = 16

@@ -6,6 +6,7 @@ Base classes and methods for actors.
 
 from asyncio import coroutine, Queue, get_event_loop, Lock, wait, Event
 from asyncio import FIRST_COMPLETED
+from illume.task import get_first_completed
 
 
 class ActorManager(object):
@@ -53,6 +54,11 @@ class Actor(object):
     async def start(self):
         # TODO, maybe this guy just reschedules himself every time
         # instead of running in a loop?
+
+        await self.initialize()
+        await self._start()
+
+    async def initialize(self):
         await self.on_start()
 
         if self._force_stop:
@@ -61,6 +67,7 @@ class Actor(object):
         if not self.running:
             self.running = True
 
+    async def _start(self):
         try:
             await self._run()
         finally:
@@ -119,16 +126,10 @@ class Actor(object):
             return
 
         pending = {self.inbox.get(), self._stop_event.wait()}
-        done, pending = await wait(pending, return_when=FIRST_COMPLETED, loop=self._loop)
-
-        for task in pending:
-            task.cancel()
-
-        # Assumes that pending only has two items.
-        future = done.pop()
+        result = await get_first_completed(pending, self._loop)
 
         if self.running:
-            await self.on_message(future.result())
+            await self.on_message(result)
 
     async def on_message(self, data):
         """Called when the actor receives a message"""

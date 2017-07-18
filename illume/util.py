@@ -1,10 +1,13 @@
 """Miscellaneous utility functions."""
 
 from errno import ENOENT, EEXIST
+from illume import config
 from illume.error import InsufficientMemory, AllocationValueError
 from os import makedirs, remove
 from psutil import virtual_memory
 from shutil import rmtree
+from tempfile import mktemp
+from uuid import uuid1
 
 
 def create_dir(path):
@@ -63,3 +66,10 @@ def check_alloc_size(size, name=None):
             "size": size,
             "available": available
         })
+
+
+def get_temp_file_name():
+    prefix = config.get("TEMP_PREFIX")
+    suffix = "-{}".format(uuid1())
+
+    return mktemp(prefix=prefix, suffix=suffix)

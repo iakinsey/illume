@@ -12,7 +12,7 @@ in_data = lambda *a: join(DATA_DIR, *a)
 
 
 FRONTIER_KEY_FILTER_DB_PATH = "{}-{}".format(in_data("frontier"), SHARD_ID)
-
+TEMP_PREFIX = "illume-test-"
 
 FETCHER_OUTPUT_DIRECTORY = shard_path("fetcher")
 FETCHER_PROGRESS_DIR = shard_path("progress")
