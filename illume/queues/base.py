@@ -12,7 +12,7 @@ class GeneratorQueue:
     closed = False
 
     def __init__(self, get_size=10):
-        raise NotImplementedError
+        pass
 
     def get(self):
         raise NotImplementedError

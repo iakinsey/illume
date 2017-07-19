@@ -216,7 +216,7 @@ class TestUnixSocketServerConnection(IllumeTest):
                 result_queue.put("get")
                 return (result, self)
 
-        pooled_actor = TestPooledActor(None, pooled_queue, loop)
+        pooled_actor = TestPooledActor(Actor, pooled_queue, loop)
         conn = TestConnection(server, pooled_actor, None, None, None, loop)
         server.clients.append(conn)
 

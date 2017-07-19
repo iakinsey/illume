@@ -96,9 +96,6 @@ class Actor(object):
 
     async def publish(self, data):
         """Push data to the outbox"""
-        # TODO what should we do if an actor has multiple outboxes?
-        # Maybe we just have composite outboxes, that would make the most sense
-        # at least.
 
         await self.outbox.put(data)
 

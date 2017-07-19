@@ -3,14 +3,13 @@ from illume.error import QueueError
 
 class PooledActor:
     outbox = None
+    actor = None
 
-    # TODO add on_stop handler
     def __init__(self, Actor, pooled_queue, loop):
         self.Actor = Actor
         self.pooled_queue = pooled_queue
         self.pooled_queue.set_pooled_actor(self)
         self.loop = loop
-        # TODO set init handler here
 
     def set_outbox(self, outbox):
         self.outbox = outbox
@@ -23,16 +22,20 @@ class PooledActor:
             err = "start was called before set_outbox in {}."
             raise QueueError(err.format(self.__class__.__name__))
 
+        self.actor = self.Actor(self.pooled_queue, self.outbox, self.loop)
         self.pooled_queue.set_pooled_actor(self)
-        # TODO set on_start handler here
+        self.loop.run_until_complete(self.actor.on_start())
         self.pooled_queue.init()
+        self.loop.run_until_complete(self.stop())
 
     async def on_message(self, message):
-        actor = self.Actor(self.pooled_queue, self.outbox, self.loop)
+        await self.actor.initialize()
+        await self.actor.on_message(message)
+        await self.actor.stop()
 
-        await actor.initialize()
-        await actor.on_message(message)
-        await actor.stop()
+    async def stop(self):
+        await self.actor.on_stop()
+        await self.pooled_queue.stop()
 
 
 class PooledQueue:
@@ -55,6 +58,4 @@ class PooledQueue:
         raise NotImplementedError("{}.{}".format(name, "start"))
 
     async def stop(self):
-        name = self.__class__.__name__
-
-        raise NotImplementedError("{}.{}".format(name, "stop"))
+        pass

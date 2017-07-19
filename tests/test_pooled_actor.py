@@ -5,8 +5,9 @@ from asyncio import new_event_loop
 from pytest import fixture, raises, fail
 from illume.actor import Actor
 from illume.error import QueueError
+from illume.queues.base import GeneratorQueue
 from illume.queues.pool import PooledActor, PooledQueue
-from illume.test.assertions import check_queue
+from illume.test.assertions import check_queue, check_queue_multi
 from queue import Queue
 
 
@@ -50,7 +51,7 @@ class TestPooledActor:
 
     def test_pooled_actor_set_outbox(self, loop):
         pooled_queue = PooledQueue()
-        pooled_actor = PooledActor(None, pooled_queue, loop)
+        pooled_actor = PooledActor(Actor, pooled_queue, loop)
         outbox = "test-outbox"
         pooled_actor.set_outbox(outbox)
 
@@ -100,3 +101,46 @@ class TestPooledActor:
         pooled_actor.set_outbox(outbox)
         pooled_actor.start()
         check_queue(result_queue, result)
+
+    def test_pooled_actor_hooks(self, loop):
+        result_queue = Queue()
+
+        class TestQueue(GeneratorQueue):
+            async def put(self, message):
+                result_queue.put(message)
+
+        class TestActor(Actor):
+            def on_init(self):
+                result_queue.put("on_init")
+
+            async def on_message(self, message):
+                result_queue.put(message)
+                await self.publish("put")
+
+            async def on_stop(self):
+                result_queue.put("on_stop")
+
+        class MockPooledQueue(PooledQueue):
+            def start(self):
+                result_queue.put("start")
+                message = "on_message"
+                loop.run_until_complete(self.pooled_actor.on_message(message))
+
+            async def stop(self):
+                result_queue.put("stop")
+
+        outbox = TestQueue()
+        pooled_queue = MockPooledQueue()
+        pooled_actor = PooledActor(TestActor, pooled_queue, loop)
+        pooled_actor.set_outbox(outbox)
+
+        pooled_actor.start()
+
+        check_queue_multi(result_queue, [
+            "on_init",
+            "start",
+            "on_message",
+            "put",
+            "on_stop",
+            "stop"
+        ])
