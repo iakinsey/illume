@@ -268,6 +268,7 @@ class TestPooledUnixSocketServerQueue(IllumeTest):
         client_thread = Thread(target=run_client, daemon=True)
 
         server_thread.start()
+        sleep(1)
         client_thread.start()
         check_queue(result_queue, "on_connect")
         server_loop.stop()

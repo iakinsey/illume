@@ -15,6 +15,9 @@ CRLF_LINE = b'\r\n'
 
 
 class FakeSocket:
+
+    """Mock socket used to parse an http response in parse_http_response."""
+
     def __init__(self, response_buffer):
         self._file = response_buffer
 
@@ -23,6 +26,7 @@ class FakeSocket:
 
 
 def parse_http_response(buf):
+    """Get parsed HTTP response from request buffer."""
     src = FakeSocket(buf)
     resp = HTTPResponse(src)
     resp.begin()
@@ -31,6 +35,9 @@ def parse_http_response(buf):
 
 
 class header_property:
+
+    """Raise exception from response if property is accessed."""
+
     def __init__(self, raises):
         self.raises = raises
 
@@ -55,6 +62,17 @@ class HTTPRequest:
 
     """
     Represents a single HTTP transaction.
+
+    Args:
+        url (str): Request URL
+        writer (fd): Output file descriptor
+        method (str): HTTP request method
+        timeout (int): Request timeout
+        max_response_size (int): Max body size
+        max_header_size (int): Max header size
+        request_body (str): HTTP request body
+        headers (dict): Request headers
+        loop (asyncio.AbstractEventLoop): Event loop
     """
 
     _header_state = None
@@ -96,6 +114,7 @@ class HTTPRequest:
             self._loop = loop
 
     async def perform(self):
+        """Write HTTP request to server and get response."""
         conn = open_connection(
             self.hostname,
             self.port,
@@ -109,6 +128,7 @@ class HTTPRequest:
         await self._perform(reader)
 
     async def _perform(self, reader):
+        """Read HTTP response."""
         reading_header = True
 
         while 1:
@@ -139,6 +159,7 @@ class HTTPRequest:
                     raise ReadCutoff("Response body too large.")
 
     async def get_bytes(self, reader):
+        """Read bytes from server."""
         timeout_coro = sleep(self.timeout, loop=self._loop)
         reader_coro = reader.readline()
         pending = timeout_coro, reader_coro
@@ -161,19 +182,23 @@ class HTTPRequest:
 
     @header_property(raises=True)
     def response_code(self):
+        """Response code."""
         return self._response.status
 
     @header_property(raises=True)
     def response_headers(self):
+        """Resposne headers."""
         return dict(self._response.headers)
 
     @header_property(raises=False)
     def headers_valid(self):
+        """Indicate if headers are valid."""
         success, exc = self._get_header_state()
 
         return success
 
     def _get_header_state(self):
+        """Get header validity state and request exception."""
         if self._header_state:
             return self._header_state
 
@@ -190,10 +215,12 @@ class HTTPRequest:
 
     @property
     def md5_hash(self):
+        """MD5 of response body."""
         return self._md5.hexdigest()
 
     @property
     def http_query(self):
+        """Raw HTTP request sent to server."""
         return "{}\r\n\r\n{}".format(
             self.request_headers,
             self.request_body
@@ -201,6 +228,7 @@ class HTTPRequest:
 
     @property
     def request_headers(self):
+        """Raw HTTP request headers."""
         headers = {
             "Host": self.netloc
         }
@@ -218,6 +246,7 @@ class HTTPRequest:
         return "\r\n".join(tokens)
 
     def parse_url(self, url):
+        """Get metadata from URL necessary to process HTTP request."""
         split_result = urlsplit(url)
         hostname = split_result.hostname
         port = split_result.port

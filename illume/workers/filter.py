@@ -20,6 +20,7 @@ class KeyFilter(Actor):
         self.populate_bloom_filters()
 
     def init_bloom_filters(self):
+        """Initialize bloom filter."""
         self.url_bloom_filter = BloomFilter(
             config.get("FRONTIER_URL_BLOOM_MAX_N"),
             config.get("FRONTIER_URL_BLOOM_P")
@@ -31,6 +32,7 @@ class KeyFilter(Actor):
         )
 
     def init_persistent_key_filter(self):
+        """Initialize persistent key filter."""
         self.key_filter_path = config.get("FRONTIER_KEY_FILTER_DB_PATH")
         self.key_filter_size = config.get("FILTER_HASHER_KEY_SIZE")
         self.persistent_key_filter = PersistentKeyFilter(
@@ -40,7 +42,7 @@ class KeyFilter(Actor):
         self.cursor = self.persistent_key_filter.create_cursor()
 
     def populate_bloom_filters(self):
-        # Take all data in the database and throw it into the bloom filter.
+        """Populate bloom filter with data from the persistent key filter."""
         pass
 
     async def on_message(self, message):
@@ -50,6 +52,7 @@ class KeyFilter(Actor):
             await self.handle_url(url)
 
     async def handle_url(self, url_map):
+        """Determine if URL should be crawled."""
         url = url_map['url']
         domain = url_map['domain']
         override = url_map.get('override', False)
@@ -88,7 +91,11 @@ class KeyFilter(Actor):
                 self.url_bloom_filter.add(url)
 
         if should_publish:
-            priority = self._get_priority(domain_is_known, url_is_known, url_map)
+            priority = self._get_priority(
+                domain_is_known,
+                url_is_known,
+                url_map
+            )
             url_map['fetch_priority'] = priority
             await self.publish(url_map)
 
@@ -97,6 +104,7 @@ class KeyFilter(Actor):
         # triggered with the new values.
 
     def _get_priority(self, domain_is_known, url_is_known, url_map):
+        """Get crawler priority of url."""
         override = url_map.get("override", None)
         recrawl = url_map.get("recrawl", None)
 
@@ -114,6 +122,7 @@ class KeyFilter(Actor):
             return 5
 
     def _should_add(self, domain_is_known, url_is_known):
+        """Determine of url should be added to the database."""
         return all((
             not (domain_is_known and url_is_known),
             any((
@@ -123,6 +132,7 @@ class KeyFilter(Actor):
         ))
 
     def _should_ignore(self, domain_is_known, url_is_known, override, recrawl):
+        """Determine if URL should be ignored."""
         return all((
             domain_is_known,
             url_is_known,
@@ -133,6 +143,7 @@ class KeyFilter(Actor):
         ))
 
     def check_entity(self, entity, bloom_filter, key_filter_fn):
+        """Check if entity is known."""
         entity_known = entity in bloom_filter
 
         if entity_known:
@@ -141,6 +152,7 @@ class KeyFilter(Actor):
         return entity_known
 
     def exists_domain(self, domain):
+        """Domain has been seen."""
         domain_known = domain in self.domain_bloom_filter
 
         if domain_known:
@@ -152,6 +164,7 @@ class KeyFilter(Actor):
         return domain_known
 
     def exists_url(self, domain, url):
+        """URL has been seen."""
         url_known = url in self.url_bloom_filter
 
         if url_known:

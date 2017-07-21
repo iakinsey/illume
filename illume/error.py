@@ -112,6 +112,7 @@ class NoSuchOperation(IllumeException):
 
     code = 15
 
+
 class TaskComplete(IllumeException):
 
     """Task has completed execution."""

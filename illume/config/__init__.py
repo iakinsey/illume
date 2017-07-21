@@ -13,6 +13,7 @@ ENV = {}
 
 
 class EMPTY:
+
     """
     Signifies that a default value was not set. Should trigger an error if
     default is set to EMPTY and an attribute does not exist.
@@ -22,6 +23,15 @@ class EMPTY:
 
 
 class Config:
+
+    """
+    Configuration management entity.
+
+    Args:
+        name (str): Name of config environment.
+        fallback (bool): Indicate if configuration should fallback to base.
+    """
+
     no_config_err = "No such config variable {}"
 
     def __init__(self, name, fallback):
@@ -53,6 +63,7 @@ class Config:
         self.module = import_module("illume.config.{}".format(self.name))
 
     def get(self, name, default):
+        """Get config value"""
         value = getattr(self.module, name, default)
 
         if value != EMPTY:
@@ -69,10 +80,7 @@ class Config:
 
 
 def setenv(name, fallback=True):
-    """
-    Set configuration environment.
-    """
-
+    """Set configuration environment."""
     if CONFIG_KEY in ENV:
         raise AttributeError("Config environment already set.")
 
@@ -82,10 +90,7 @@ def setenv(name, fallback=True):
 
 
 def get(name, default=EMPTY):
-    """
-    Get configuration variable.
-    """
-
+    """Get configuration variable."""
     config_class = ENV.get(CONFIG_KEY, None)
 
     if config_class is None:

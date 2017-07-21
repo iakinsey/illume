@@ -9,23 +9,17 @@ from asyncio import FIRST_COMPLETED
 from illume.task import get_first_completed
 
 
-class ActorManager(object):
-    """
-    Take actors as input.
-    Start the actors.
-    Stop the actors.
-    Pause the actors.
-    Signal to the actors that they have received a message.
-    """
-
-    def __init__(self, actors):
-        self.actors = actors
-
-    def start(self):
-        pass
-
-
 class Actor(object):
+
+    """
+    Main actor model.
+
+    Args:
+        inbox (GeneratorQueue): Inbox to consume from.
+        outbox (GeneratorQueue): Outbox to publish to.
+        loop (GeneratorQueue): Event loop.
+    """
+
     running = False
     _force_stop = False
 
@@ -46,19 +40,16 @@ class Actor(object):
 
     @property
     def paused(self):
+        """Indicate if actor is paused."""
         return self._pause_lock.locked()
 
-    async def _get_command(self):
-        return await self._command_inbox.get()
-
     async def start(self):
-        # TODO, maybe this guy just reschedules himself every time
-        # instead of running in a loop?
-
+        """Main public entry point to start the actor."""
         await self.initialize()
         await self._start()
 
     async def initialize(self):
+        """Initialize the actor before starting."""
         await self.on_start()
 
         if self._force_stop:
@@ -68,43 +59,41 @@ class Actor(object):
             self.running = True
 
     async def _start(self):
+        """Run the event loop and force the on_stop event."""
         try:
             await self._run()
         finally:
             await self.on_stop()
 
     async def resume(self):
+        """Resume the actor."""
         await self.on_resume()
         self._pause_lock.release()
 
     async def pause(self):
         """Pause the actor."""
-
         await self._pause_lock.acquire()
         await self.on_pause()
 
     async def _block_if_paused(self):
+        """Block on the pause lock."""
         if self.paused:
             await self._pause_lock.acquire()
             await self._pause_lock.release()
 
     async def _run(self):
+        """Main event loop."""
         while self.running:
             await self._block_if_paused()
 
             await self._process()
 
     async def publish(self, data):
-        """Push data to the outbox"""
-
+        """Push data to the outbox."""
         await self.outbox.put(data)
 
     async def stop(self):
         """Stop the actor."""
-        # TODO set a future in here or in the event loop to keep stop and
-        # on_stop in sync
-
-        #self._stopped_manually = True
         self.inbox = None
         self.outbox = None
         self.running = False
@@ -129,7 +118,7 @@ class Actor(object):
             await self.on_message(result)
 
     async def on_message(self, data):
-        """Called when the actor receives a message"""
+        """Called when the actor receives a message."""
         raise NotImplementedError
 
     def on_init(self):

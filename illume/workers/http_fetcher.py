@@ -31,6 +31,7 @@ class HTTPFetcher(Actor):
         create_dir(self.progress_dir)
 
     async def on_message(self, message):
+        """Get URL."""
         url = message['url']
         domain = message['domain']
         method = message.get('method', "GET")
@@ -72,6 +73,7 @@ class HTTPFetcher(Actor):
         await self.publish(result)
 
     def get_unique_file_name(self):
+        """Get a unique file name to store the result in."""
         self.sequence += 1
 
         return "fetcher-{}-{}-{}-{}".format(

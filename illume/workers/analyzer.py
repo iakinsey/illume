@@ -25,6 +25,7 @@ class FileAnalyzer(Actor):
         self.drop_query = config.get("PARSER_DROP_QUERY")
 
     async def on_message(self, message):
+        """Obtain stream from input and perform analysis."""
         path = message.get("path", None)
         origin = message.get("url", None)
 
@@ -41,6 +42,7 @@ class FileAnalyzer(Actor):
         await self.publish(message)
 
     def parse_urls(self, origin_url, urls):
+        """Get complete absolute URL set."""
         result = []
         origin_metadata = urlsplit(origin_url)
 
@@ -54,6 +56,7 @@ class FileAnalyzer(Actor):
         return result
 
     def parse_url(self, origin_metadata, url):
+        """Obtain an absolute URL from the origin URL and a URL fragment."""
         metadata = urlsplit(url)
         tokens = list(metadata)
         domains_match = tokens[NETLOC] == origin_metadata.netloc
@@ -82,8 +85,8 @@ class FileAnalyzer(Actor):
             # Default to HTTP if there is no scheme.
             tokens[SCHEME] = "http"
 
-        # Escaping the url is definitely not perfect. More work needs to be done
-        # here to cover all edge cases.
+        # Escaping the url is definitely not perfect. More work needs to be
+        # done here to cover all edge cases.
         tokens[PATH] = quote(tokens[PATH], safe=LEGAL_URL_CHARS)
 
         if self.drop_query:

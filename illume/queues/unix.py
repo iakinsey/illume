@@ -1,3 +1,6 @@
+"""Unix socket queues."""
+
+
 from asyncio import get_event_loop, Event, Lock, wait, open_unix_connection
 from asyncio import Queue, FIRST_COMPLETED, start_unix_server, sleep
 from copy import copy
@@ -11,6 +14,15 @@ from json import dumps, loads
 
 
 class UnixSocket(GeneratorQueue):
+
+    """
+    Base unix socket class.
+
+    Args:
+        path (str): Path of unix socket.
+        loop (asyncio.AbstractEventLoop): Event loop.
+    """
+
     reader = None
     writer = None
 
@@ -25,6 +37,7 @@ class UnixSocket(GeneratorQueue):
         self.loop = loop
 
     async def start(self):
+        """Start queue."""
         if self.stop_event.is_set():
             raise QueueError("Socket already stopped.")
 
@@ -36,15 +49,22 @@ class UnixSocket(GeneratorQueue):
             await self.stop()
 
     async def run(self):
+        """
+        Implementable.
+
+        Implement this class to manage initialization logic.
+        """
         raise NotImplementedError("UnixSocket.run")
 
     async def stop(self):
+        """Stop queue."""
         await self.on_stop()
         self.ready.clear()
         self.stop_event.set()
 
     @dies_on_stop_event
     async def get(self):
+        """Get from queue."""
         await self.ready.wait()
 
         payload = await self.reader.readline()
@@ -56,6 +76,7 @@ class UnixSocket(GeneratorQueue):
 
     @dies_on_stop_event
     async def put(self, data):
+        """Put into queue."""
         await self.ready.wait()
 
         payload = self.encode(data)
@@ -63,20 +84,36 @@ class UnixSocket(GeneratorQueue):
         self.writer.write_eof()
 
     async def on_stop(self):
+        """
+        Implementable.
+
+        Implement this class to manage on_stop event.
+        """
         pass
 
     def encode(self, data):
+        """Serialize data into JSON bytes."""
         data = dumps(data)
 
         return data.encode(self.encoding_type)
 
     def decode(self, data):
+        """Deserialize data from JSON bytes."""
         data = data.decode(self.encoding_type)
 
         return loads(data) if data else None
 
 
 class PooledUnixSocketServerQueue(PooledQueue):
+
+    """
+    Unix socket server queue.
+
+    Args:
+        path (str): Path to listen on.
+        loop (asyncio.AbstractEventLoop): Event loop.
+    """
+
     clients = None
 
     def __init__(self, path, loop):
@@ -86,6 +123,7 @@ class PooledUnixSocketServerQueue(PooledQueue):
         self.stop_event = Event(loop=loop)
 
     def start(self):
+        """Start server."""
         coro = start_unix_server(
             self.on_connect,
             path=self.path,
@@ -102,18 +140,21 @@ class PooledUnixSocketServerQueue(PooledQueue):
             await client.put(data)
 
     async def on_connect(self, reader, writer):
+        """Handle a new connection."""
         client = self.get_connection(reader, writer)
         # TODO double check if a race condition exists here
         self.clients.append(client)
         await client.start()
 
     async def stop(self):
+        """Stop server."""
         self.stop_event.set()
 
         for client in copy(self.clients):
             await client.close()
 
     def get_connection(self, reader, writer):
+        """Get UnixSocketServerConnection object from reader/writer."""
         return UnixSocketServerConnection(
             self,
             self.pooled_actor,
@@ -124,10 +165,24 @@ class PooledUnixSocketServerQueue(PooledQueue):
         )
 
     def get_client(self, loop):
+        """Generate client object from server parameters. Thread safe."""
         return UnixSocketClient(self.path, loop)
 
 
 class UnixSocketServerConnection(UnixSocket):
+
+    """
+    Single connection instance from PooledUnixSocketServerQueue.
+
+    Args:
+        server (illume.queues.unix.PooledUnixSocketServerQueue): Server.
+        pooled_actor (illume.queues.pool.PooledActor): Pooled actor.
+        path (string): Path of unix socket.
+        reader (asyncio.StreamReader): Reader.
+        writer (asyncio.StreamWriter): Writer.
+        loop (asyncio.AbstractEventLoop): Event loop.
+    """
+
     def __init__(self, server, pooled_actor, path, reader, writer, loop):
         self.pooled_actor = pooled_actor
         self.server = server
@@ -138,10 +193,12 @@ class UnixSocketServerConnection(UnixSocket):
         super().__init__(path, loop=loop)
 
     async def on_stop(self):
+        """Handle connection termination."""
         self.server.clients.remove(self)
 
     @dies_on_stop_event
     async def run(self):
+        """Main read event loop."""
         while not self.stop_event.is_set():
             result = await self.get()
 
@@ -150,7 +207,11 @@ class UnixSocketServerConnection(UnixSocket):
 
 
 class UnixSocketClient(UnixSocket):
+
+    """Unix socket client queue."""
+
     async def start(self):
+        """Initialize the client."""
         self.reader, self.writer = await open_unix_connection(
             path=self.path,
             loop=self.loop
@@ -158,16 +219,20 @@ class UnixSocketClient(UnixSocket):
         self.ready.set()
 
     async def stop(self):
+        """Stop the client."""
         await timeout(self.writer.drain(), 1, self.loop)
 
     async def setup(self):
+        """Set up the client."""
         if not self.ready.is_set():
             await self.start()
 
     async def put(self, message):
+        """Send data to the server."""
         await self.setup()
         await super().put(message)
 
     async def get(self):
+        """Read data from the server."""
         await self.setup()
         await super().put(message)

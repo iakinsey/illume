@@ -1,8 +1,6 @@
 """Bloom filter.
 
 Implements a bloom filter using the FNV1a 64-bit hash.
-
-TODO make hashes a generator.
 """
 
 
@@ -41,7 +39,9 @@ class BloomFilter:
     """
     Implements a bloom filter using the FNV1a 64-bit hash.
 
-    TODO explain each variable in the docstring.
+    Args:
+        max_n (int): Bloom filter element size.
+        p (float): Desired error rate
     """
 
     def __init__(self, max_n, p):
@@ -95,6 +95,7 @@ class BloomFilter:
 
     @property
     def error_params(self):
+        """Exception parameters."""
         return {
             "max_n": self.max_n,
             "desired_p": self.p,
@@ -110,23 +111,17 @@ class BloomFilter:
         elif self.current_p > self.p:
             raise BloomFilterExceedsErrorRate(self.error_params)
 
-    def remove(self, item):
-        """
-        Remove an item from the bloom filter.
-
-        No.
-        """
-        raise NotImplementedError()
-
     def _get_hashes(self, content):
-        # TODO make hashes a generator.
+        """Get hashes from native C call."""
         for index in fnv1a64_composite(content, self.k, self.m):
             yield index
 
     def __len__(self):
+        """Count of elements inserted."""
         return self.n
 
     def __contains__(self, item):
+        """Bloom filter coantains values in addresses of the param's hash."""
         for index in self._get_hashes(item):
             if not self.bit_array[index]:
                 return False

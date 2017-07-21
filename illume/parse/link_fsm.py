@@ -10,11 +10,22 @@ LEGAL_URL_CHARS = (
 
 
 class FSMExit(Exception):
+
     """Raise this exception to gracefully exit from the FSM."""
+
     pass
 
 
 class FSM:
+
+    """
+    Base finite state machine class.
+
+    Args:
+        stream (fd): Stream to ingest from.
+        matches (bool): Set of character matches to append to.
+    """
+
     _state = None
 
     def __init__(self, stream, matches=None):
@@ -34,10 +45,16 @@ class FSM:
         pass
 
     def reset(self):
+        """Reset to initial state."""
         self.state = self.initial_state
 
     @property
     def initial_state(self):
+        """
+        Implementable.
+
+        Initial state of the FSM.
+        """
         raise NotImplementedError("Initial state must be set for FSM to run.")
 
     def get_bytes(self, size, term_char=None):
@@ -93,7 +110,6 @@ class FSM:
         If rewind is set to `True`, set the buffer's cursor to its initial
         value when this function was first called.
         """
-
         position = self.stream.tell()
 
         while 1:
@@ -116,13 +132,11 @@ class FSM:
 
     def match_next_or(self, chars, rewind=True):
         """
-        Assert that the next character in the buffer is in the set of argument
-        `chars`.
+        Match next character with `chars`.
 
         Returns character if character is in `chars`.
         Returns None if no match.
         """
-
         position = self.stream.tell()
 
         data = self.stream.read(1)
@@ -141,7 +155,6 @@ class FSM:
         Returns `True` if match is found.
         Returns `False` if no match is found.
         """
-
         position = self.stream.tell()
 
         for char in string:
@@ -156,11 +169,7 @@ class FSM:
         return string
 
     def get_until(self, term_chars):
-        """
-        Read from the buffer and return all characters between the start of the
-        cursor and the end of the document or first instance of a character
-        specified in `term_chars`.
-        """
+        """Return all characters until `term_char` or EOF is reached."""
         result = []
 
         while 1:
@@ -173,9 +182,11 @@ class FSM:
 
     def get_until_mismatch(self, legal_chars):
         """
+        Get until mismatch.
+
         Read from the buffer and return all characters between the start of the
-        cursor and the end of the document for the first instance of a character
-        not specified in `term_chars`.
+        cursor and the end of the document for the first instance of a
+        character not specified in `legal_chars`.
         """
         result = []
 
@@ -188,6 +199,7 @@ class FSM:
             result.append(data)
 
     def perform(self):
+        """Start FSM."""
         self.running = True
 
         try:
@@ -202,15 +214,24 @@ class FSM:
         self.reset()
 
     def exit(self):
+        """Stop FSM."""
         self.state = self.end
 
         raise FSMExit()
 
     def end(self):
+        """
+        Implementable.
+
+        Final state for the FSM after exit() is called.
+        """
         pass
 
 
 class LinkReaderFsm(FSM):
+
+    """URL extraction FSM."""
+
     http = "http"
     ttp = "ttp"
     https_suffix = 's'
@@ -224,6 +245,7 @@ class LinkReaderFsm(FSM):
         return self.read_link
 
     def read_link(self):
+        """Primary state."""
         data = []
 
         if not self.match_next(self.ttp):
@@ -251,9 +273,9 @@ class LinkReaderFsm(FSM):
 
         data.append(self.double_forward_slash)
 
-        # This obeys RFC 3986 when matching a URL. However, pages may not follow
-        # the specification. It would be a good idea to find a more inclusive
-        # pattern for extracting URLS in the future
+        # This obeys RFC 3986 when matching a URL. However, pages may not
+        # follow the specification. It would be a good idea to find a more
+        # inclusive pattern for extracting URLS in the future
         url = self.get_until_mismatch(self.legal_url_chars)
 
         if url:
@@ -262,6 +284,9 @@ class LinkReaderFsm(FSM):
 
 
 class TagReaderFsm(FSM):
+
+    """URL extraction FSM, seeks <a> tags."""
+
     a = "a"
     href = "href="
     a_terminates = ">\"'"
@@ -273,12 +298,14 @@ class TagReaderFsm(FSM):
         return self.read_tag
 
     def read_tag(self):
+        """Seek <a> tag."""
         if self.match_next(self.a):
             self.state = self.read_a_tag
         else:
             self.exit()
 
     def read_a_tag(self):
+        """Read content within <a> tag."""
         if not self.read_until_match(self.href, self.close_tag):
             self.exit()
 
@@ -292,11 +319,15 @@ class TagReaderFsm(FSM):
 
 
 class DocumentReaderFsm(FSM):
+
+    """URL extraction FSM, used on html pages."""
+
     http_prefix = "h"
     tag_prefix = "<"
     url_hint = http_prefix + tag_prefix
 
     def on_init(self):
+        """Set up child FSM's."""
         self.tag_reader = TagReaderFsm(self.stream, matches=self.matches)
         self.link_reader = LinkReaderFsm(self.stream, matches=self.matches)
 
@@ -305,6 +336,7 @@ class DocumentReaderFsm(FSM):
         return self.read_document
 
     def read_document(self):
+        """Read until an element required to match on a child FSM is found."""
         next_char = self.read_until_match_chars(self.url_hint)
 
         if not next_char:

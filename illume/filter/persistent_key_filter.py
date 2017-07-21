@@ -1,3 +1,6 @@
+"""Persistent key filter."""
+
+
 from illume.error import DatabaseCorrupt, QueryError
 from illume.util import create_dir
 from os.path import dirname, exists
@@ -43,6 +46,15 @@ CHECKER_MULTI = "SELECT domain, url FROM filter WHERE "
 
 
 class PersistentKeyFilter(object):
+
+    """
+    Persistent uniqueness filter for domains and URLs.
+
+    Args:
+        path (str): Path of database.
+        key_size (int): Size of columns used to store hashes.
+    """
+
     _db_conn = None
 
     def __init__(self, path, key_size=8):
@@ -51,12 +63,14 @@ class PersistentKeyFilter(object):
 
     @property
     def conn(self):
+        """Database connection."""
         if self._db_conn is None:
             self._init_db()
 
         return self._db_conn
 
     def _init_db(self):
+        """Initialize database, create if it doesn't exist."""
         db_exists = exists(self.path)
         create_dir(dirname(self.path))
         self._db_conn = connect(self.path)
@@ -69,11 +83,13 @@ class PersistentKeyFilter(object):
             raise DatabaseCorrupt("Tables out of sync.")
 
     def _check_if_tables_exist(self):
+        """Assert existence of tables."""
         result = self._db_conn.execute(CHECKER)
 
         return sum(1 for x in result) == len(SCHEMA)
 
     def _create_db(self):
+        """Create database."""
         table = SCHEMA[0].format(key_size=self.key_size)
         queries = (table,) + tuple(SCHEMA[1:])
 
@@ -84,9 +100,11 @@ class PersistentKeyFilter(object):
                 cursor.execute(query)
 
     def create_cursor(self):
+        """Database cursor."""
         return self.conn.cursor()
 
     def add(self, domain, url, cursor=None):
+        """Add domain and url pairing to database."""
         if not cursor:
             cursor = self.create_cursor()
 
@@ -94,6 +112,7 @@ class PersistentKeyFilter(object):
         cursor.execute(INSERTER, (domain, url))
 
     def add_bulk(self, pairs):
+        """Add a set of (domain, url) pairings to the database."""
         with self.conn:
             cursor = self.conn.cursor()
 
@@ -109,6 +128,7 @@ class PersistentKeyFilter(object):
                     yield False
 
     def exists(self, domain=None, url=None):
+        """Check if a domain and/or url exists."""
         if domain and url:
             template = CHECKER_BOTH
             params = (domain, url)
@@ -127,6 +147,7 @@ class PersistentKeyFilter(object):
             return bool(cursor.fetchone())
 
     def exists_bulk(self, pairs):
+        """Check if a set of domain/url pairings exist."""
         params = []
         tokens = []
 
@@ -154,6 +175,7 @@ class PersistentKeyFilter(object):
                 yield result
 
     def exists_domain(self, domain, cursor=None):
+        """Check if a domain exists."""
         if not cursor:
             cursor = self.create_cursor()
 
@@ -162,6 +184,7 @@ class PersistentKeyFilter(object):
         return bool(cursor.fetchone())
 
     def exists_url(self, domain, url, cursor=None):
+        """Check if a URL exists."""
         if not cursor:
             cursor = self.create_cursor()
 

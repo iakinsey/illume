@@ -7,7 +7,11 @@ from illume.error import QueueClosed
 
 class GeneratorQueue:
 
-    """Generator queue abstract class."""
+    """
+    Abstract class.
+
+    Generator queue.
+    """
 
     closed = False
 
@@ -15,18 +19,27 @@ class GeneratorQueue:
         pass
 
     def get(self):
+        """Get element in queue."""
         raise NotImplementedError
 
     def put(self, data):
+        """Add element to queue."""
         raise NotImplementedError
 
     def close(self):
+        """Close queue."""
         raise NotImplementedError
 
 
 class AsyncQueue(GeneratorQueue):
 
-    """Implements the GeneratorQueue interface using the asyncio queue."""
+    """
+    Implements the GeneratorQueue interface using the asyncio queue.
+
+    Args:
+        get_size (int): Number of elements to return from queue.
+        loop (asyncio.AbstractEventLoop): Event loop
+    """
 
     def __init__(self, get_size=10, loop=None):
         self.get_size = get_size
@@ -45,6 +58,7 @@ class AsyncQueue(GeneratorQueue):
         return as_completed(tasks, loop=self._loop)
 
     async def _get_single(self):
+        """Get single entity from queue."""
         return await self.queue.get()
 
     async def put(self, data):

@@ -1,3 +1,10 @@
+"""
+Test HTTP server.
+
+See tests/test_http_client.py for more information.
+"""
+
+
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from illume.test.error import TestFailure
 from json import dumps, loads

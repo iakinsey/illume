@@ -1,3 +1,6 @@
+"""Test configuration."""
+
+
 from os.path import dirname, abspath, realpath, join
 from multiprocessing import cpu_count
 
