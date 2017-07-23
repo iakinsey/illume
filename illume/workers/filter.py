@@ -47,9 +47,13 @@ class KeyFilter(Actor):
 
     async def on_message(self, message):
         urls = message.get("urls", [])
+        count = 0
 
         for url in urls:
-            await self.handle_url(url)
+            count += await self.handle_url(url)
+
+        if count:
+            log.info("{} URLS published".format(count))
 
     async def handle_url(self, url_map):
         """Determine if URL should be crawled."""
@@ -73,7 +77,7 @@ class KeyFilter(Actor):
         )
 
         if should_ignore:
-            return
+            return 0
 
         if not domain_is_known:
             self.domain_bloom_filter.add(domain)
@@ -99,9 +103,7 @@ class KeyFilter(Actor):
             url_map['fetch_priority'] = priority
             await self.publish(url_map)
 
-        # TODO If the bloom filter exceeds it's maximum size or error rate, a
-        # new one is created and the bloom filter is reindexed. A warning is
-        # triggered with the new values.
+            return 1
 
     def _get_priority(self, domain_is_known, url_is_known, url_map):
         """Get crawler priority of url."""

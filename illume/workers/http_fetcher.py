@@ -5,6 +5,7 @@ from illume import config
 from illume.actor import Actor
 from illume.clients.http import HTTPRequest
 from illume.error import IllumeException
+from illume.log import log
 from illume.util import create_dir
 from os import getpid
 from os.path import join
@@ -64,10 +65,12 @@ class HTTPFetcher(Actor):
         except IllumeException as e:
             result['success'] = False
             result['error'] = e.code
+            log.error("'{}' occurred while fetching {}.".format(e, url))
         else:
             result['success'] = True
             result['md5'] = client.md5_hash
             result['http_code'] = client.response_code
+            log.info("Successfully fetched {}".format(url))
 
         move(progress_path, destination_path)
         await self.publish(result)

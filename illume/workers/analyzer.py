@@ -4,6 +4,7 @@
 from illume import config
 from illume.actor import Actor
 from illume.error import FileNotFound
+from illume.log import log
 from illume.parse.link_fsm import DocumentReaderFsm, LEGAL_URL_CHARS
 from os.path import exists
 from urllib.parse import urlsplit, urlunsplit, quote, quote_plus, urljoin
@@ -37,8 +38,10 @@ class FileAnalyzer(Actor):
 
         fsm.perform()
 
-        message.update({"urls": self.parse_urls(origin, fsm.matches)})
+        urls = self.parse_urls(origin, fsm.matches)
+        message.update({"urls": urls})
 
+        log.info("Extracted {} urls from {}".format(len(urls), origin))
         await self.publish(message)
 
     def parse_urls(self, origin_url, urls):
