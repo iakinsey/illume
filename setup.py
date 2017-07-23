@@ -4,6 +4,10 @@ import sys
 from setuptools.command.test import test
 
 
+NAME = 'illume'
+VERSION = '0.0.1'
+
+
 class RunTests(test):
     user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
 
@@ -41,6 +45,7 @@ class RunTests(test):
 
         sys.exit(exit_code)
 
+
 extensions = [
     Extension(
         "hashes",
@@ -55,13 +60,15 @@ extensions = [
 ]
 
 setup(
-    name="illume",
-    version="0.0.1",
-    author="guy",
+    name=NAME,
+    version=VERSION,
+    author="Ian Kinsey",
     description="Pluggable content crawler",
     license="Proprietary",
     packages=["illume"],
-    cmdclass = {'test': RunTests},
+    cmdclass = {
+        'test': RunTests
+    },
     ext_modules=extensions,
     install_requires=[
         'bitarray==0.8.1',
