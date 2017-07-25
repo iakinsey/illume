@@ -3,6 +3,7 @@
 
 from asyncio import get_event_loop, Event, Lock, wait, open_unix_connection
 from asyncio import Queue, FIRST_COMPLETED, start_unix_server, sleep
+from asyncio import new_event_loop
 from copy import copy
 from illume import config
 from illume.error import TaskComplete
@@ -25,8 +26,9 @@ class UnixSocket(GeneratorQueue):
 
     reader = None
     writer = None
+    connect_retries = 0
 
-    def __init__(self, path, loop):
+    def __init__(self, path, loop, connect_retries=3):
         if loop is None:
             loop = get_event_loop()
 
@@ -34,6 +36,7 @@ class UnixSocket(GeneratorQueue):
         self.ready = Event(loop=loop)
         self.stop_event = Event(loop=loop)
         self.path = path
+        self.connect_retries = connect_retries
         self.loop = loop
 
     async def start(self):
@@ -211,6 +214,15 @@ class UnixSocketClient(UnixSocket):
     """Unix socket client queue."""
 
     async def start(self):
+        for n in range(self.connect_retries):
+            try:
+                await self.connect()
+            except FileNotFoundError:
+                await sleep(n, loop=self.loop)
+            else:
+                return
+
+    async def connect(self):
         """Initialize the client."""
         self.reader, self.writer = await open_unix_connection(
             path=self.path,
@@ -228,7 +240,6 @@ class UnixSocketClient(UnixSocket):
             await self.start()
 
     async def put(self, message):
-        """Send data to the server."""
         await self.setup()
         await super().put(message)
 
@@ -236,3 +247,17 @@ class UnixSocketClient(UnixSocket):
         """Read data from the server."""
         await self.setup()
         await super().put(message)
+
+
+def get_unix_pooled_actor(Actor, path=None, loop=None):
+    """Helper method to create an actor in a pooled context."""
+    if loop is None:
+        loop = new_event_loop()
+
+    if path is None:
+        path = get_temp_file_name()
+
+    pooled_queue = PooledUnixSocketServerQueue(path, loop)
+    pooled_actor = PooledActor(Actor, pooled_queue, loop)
+
+    return pooled_actor
