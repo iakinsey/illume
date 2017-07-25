@@ -13,7 +13,6 @@ class TestActor:
     def test_actor_init(self):
         # Create an actor with an on_init event
         # Assert that on_init was called.
-
         result = {}
 
         class TestActor(ActorTestable):
