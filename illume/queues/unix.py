@@ -222,6 +222,8 @@ class UnixSocketClient(UnixSocket):
             else:
                 return
 
+        raise FileNotFoundError(self.path)
+
     async def connect(self):
         """Initialize the client."""
         self.reader, self.writer = await open_unix_connection(
