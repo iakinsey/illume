@@ -36,8 +36,8 @@
 **/
 
 
+#include <Python.h>
 #include "fnv/fnv.h"
-#include <python3.6m/Python.h>
 #include <math.h>
 
 

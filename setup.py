@@ -56,6 +56,10 @@ extensions = [
             "Modules/hashes/fnv/hash_64a.c",
             'Modules/hashes/hashes.c'
         ],
+        define_macros=[
+            ("PY_MAJOR", sys.version_info.major),
+            ("PY_MINOR", sys.version_info.minor)
+        ]
     )
 ]
 
