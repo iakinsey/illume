@@ -1,5 +1,6 @@
 Illume
 ======
+[![Build Status](https://travis-ci.org/iakinsey/illume.svg?branch=master)](https://travis-ci.org/iakinsey/illume)
 
 A comprehensive distributed web crawler framework
 -------------------------------------------------
