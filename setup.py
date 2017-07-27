@@ -79,6 +79,6 @@ setup(
         'psutil==4.1.0',
         'py==1.4.31',
         'pytest==2.9.1',
-        'xxhash==0.5.0'
+        'xxhash'
     ]
 )
