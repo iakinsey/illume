@@ -80,5 +80,6 @@ setup(
         'pytest==3.1.3',
         'xxhash==1.0.1',
         'psutil==5.2.2',
+        'codecov==2.0.9',
     ]
 )
