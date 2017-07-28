@@ -10,6 +10,7 @@ from illume.util import get_temp_file_name
 from pytest import raises
 from queue import Queue
 from threading import Thread
+from time import sleep
 
 
 class TestUnixSocket(IllumeTest):
@@ -267,6 +268,7 @@ class TestPooledUnixSocketServerQueue(IllumeTest):
         client_thread = Thread(target=run_client, daemon=True)
 
         server_thread.start()
+        sleep(1)
         client_thread.start()
         check_queue(result_queue, "on_connect")
         server_loop.stop()
