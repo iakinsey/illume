@@ -22,6 +22,7 @@ class RunTests(test):
 
     def run_tests(self):
         from illume import config
+        from coverage import Coverage
 
         config.setenv("test")
 
@@ -31,12 +32,18 @@ class RunTests(test):
 
         basicConfig(level=DEBUG, filename="illume-test.log")
 
+        cov = Coverage()
         test_dir = config.get("TEST_DIR")
         data_dir = config.get("DATA_DIR")
 
         # Remvoe data directory in case tests failed to complete last time.
         remove_or_ignore_dir(data_dir)
+        cov.start()
+
         exit_code = main(self.pytest_args)
+
+        cov.stop()
+        cov.xml_report()
 
         # Remove data directory if tests passed successfully. Keep it around
         # if tests failed so the developer can troubleshoot the problem.
