@@ -5,6 +5,7 @@ omit =
     illume/config/*
     illume/error.py
     tests/*
+include = illume/*
 
 [report]
 exclude_lines =
