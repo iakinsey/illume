@@ -1,6 +1,10 @@
 [run]
 branch = True
-source = illume/
+omit =
+    illume/test/*
+    illume/config/*
+    illume/error.py
+    tests/*
 
 [report]
 exclude_lines =
@@ -8,8 +12,3 @@ exclude_lines =
     pragma: no cover
     raise NotImplementedError
     if __name__ == .__main__.:
-ignore_errors = True
-omit =
-    illume/test/*
-    illume/config/*
-    illume/error.py

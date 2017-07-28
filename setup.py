@@ -32,10 +32,11 @@ class RunTests(test):
 
         basicConfig(level=DEBUG, filename="illume-test.log")
 
-        cov = Coverage()
-        test_dir = config.get("TEST_DIR")
+        project_root = config.get("PROJECT_ROOT")
         data_dir = config.get("DATA_DIR")
+        cov_config_dir = os.path.join(project_root, '.coveagerc')
 
+        cov = Coverage(config_file=cov_config_dir)
         # Remvoe data directory in case tests failed to complete last time.
         remove_or_ignore_dir(data_dir)
         cov.start()
