@@ -1,6 +1,6 @@
 Illume
 ======
-[![Build Status](https://travis-ci.org/iakinsey/illume.svg?branch=master)](https://travis-ci.org/iakinsey/illume)
+[![Build Status](https://travis-ci.org/iakinsey/illume.svg?branch=master)](https://travis-ci.org/iakinsey/illume) [![codecov](https://codecov.io/gh/iakinsey/illume/branch/master/graph/badge.svg)](https://codecov.io/gh/iakinsey/illume)
 
 A comprehensive distributed web crawler framework
 -------------------------------------------------
