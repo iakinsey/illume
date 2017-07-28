@@ -2,8 +2,8 @@ language: python
 python:
     - "3.6"
 install: "python setup.py install"
-script: "python setup.py test --cov=illume"
+script: "python setup.py test -a '--cov=illume'"
 before_install:
     - sudo apt-get install python3-dev
 after_success:
-    - codecov --token=dc87c6e7-fa1c-4167-8a03-1d40035cfc8b
+    - codecov
