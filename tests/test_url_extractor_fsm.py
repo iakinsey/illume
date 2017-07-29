@@ -143,7 +143,7 @@ class TestUrlExtractors:
 
     def test_document_reader_with_files(self):
         test_dir = config.get("TEST_DIR")
-        wiki_html_path = join(test_dir, "content", "wikipedia")
+        wiki_html_path = join(test_dir, "external", "wikipedia")
 
         if not exists(wiki_html_path):
             fail("Test html content folder not found.")
