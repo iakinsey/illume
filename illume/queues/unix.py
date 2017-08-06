@@ -8,7 +8,7 @@ from copy import copy
 from illume import config
 from illume.error import TaskComplete
 from illume.queues.base import GeneratorQueue
-from illume.queues.pool import PooledQueue
+from illume.queues.pool import PooledQueue, PooledActor
 from illume.task import dies_on_stop_event, timeout
 from illume.util import get_temp_file_name
 from json import dumps, loads
