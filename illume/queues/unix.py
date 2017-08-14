@@ -7,6 +7,7 @@ from asyncio import new_event_loop
 from copy import copy
 from illume import config
 from illume.error import TaskComplete
+from illume.log import log
 from illume.queues.base import GeneratorQueue
 from illume.queues.pool import PooledQueue, PooledActor
 from illume.task import dies_on_stop_event, timeout
@@ -84,7 +85,7 @@ class UnixSocket(GeneratorQueue):
 
         payload = self.encode(data)
         self.writer.write(payload)
-        self.writer.write_eof()
+        self.writer.write(b'\n')
 
     async def on_stop(self):
         """
@@ -104,7 +105,7 @@ class UnixSocket(GeneratorQueue):
         """Deserialize data from JSON bytes."""
         data = data.decode(self.encoding_type)
 
-        return loads(data) if data else None
+        return loads(data.strip()) if data else None
 
 
 class PooledUnixSocketServerQueue(PooledQueue):
@@ -132,7 +133,6 @@ class PooledUnixSocketServerQueue(PooledQueue):
             path=self.path,
             loop=self.loop
         )
-
         self.loop.run_until_complete(coro)
         self.loop.run_forever()
 
@@ -230,10 +230,12 @@ class UnixSocketClient(UnixSocket):
             path=self.path,
             loop=self.loop
         )
+        log.debug("Listening to socket {}".format(self.path))
         self.ready.set()
 
     async def stop(self):
         """Stop the client."""
+        #self.writer.write_eof()
         await timeout(self.writer.drain(), 1, self.loop)
 
     async def setup(self):
@@ -242,6 +244,7 @@ class UnixSocketClient(UnixSocket):
             await self.start()
 
     async def put(self, message):
+        log.debug("Putting message {}".format(message))
         await self.setup()
         await super().put(message)
 

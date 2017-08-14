@@ -73,7 +73,9 @@ class TestUnixSocket(IllumeTest):
 
         def write(data):
             called_write.put(True)
-            result_queue.put(unix_socket.decode(data))
+
+            if data != b'\n':
+                result_queue.put(unix_socket.decode(data))
 
         def write_eof():
             called_write_eof.put(True)
@@ -86,8 +88,7 @@ class TestUnixSocket(IllumeTest):
             await unix_socket.put(result)
 
         loop.run_until_complete(run())
-        check_queue(called_write, True)
-        check_queue(called_write_eof, True)
+        check_queue_multi(called_write, [True] * 2)
         check_queue(result_queue, result)
 
     def test_start_and_stop(self, loop):
@@ -268,7 +269,6 @@ class TestPooledUnixSocketServerQueue(IllumeTest):
         client_thread = Thread(target=run_client, daemon=True)
 
         server_thread.start()
-        sleep(1)
         client_thread.start()
         check_queue(result_queue, "on_connect")
         server_loop.stop()

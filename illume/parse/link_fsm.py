@@ -26,6 +26,7 @@ class FSM:
         matches (bool): Set of character matches to append to.
     """
 
+    INVALID = -1
     _state = None
 
     def __init__(self, stream, matches=None):
@@ -47,6 +48,12 @@ class FSM:
     def reset(self):
         """Reset to initial state."""
         self.state = self.initial_state
+
+    def read(self, count, default=INVALID):
+        try:
+            return self.stream.read(count)
+        except UnicodeDecodeError:
+            return default
 
     @property
     def initial_state(self):
@@ -84,7 +91,10 @@ class FSM:
         position = self.stream.tell()
 
         while 1:
-            data = self.stream.read(1)
+            data = self.read(1)
+
+            if data == self.INVALID:
+                continue
 
             if data == char:
                 index += 1
@@ -113,7 +123,11 @@ class FSM:
         position = self.stream.tell()
 
         while 1:
-            data = self.stream.read(1)
+            data = self.read(1)
+
+            if data == self.INVALID:
+                continue
+
             if data == "":
                 if rewind:
                     self.stream.seek(position)
@@ -139,7 +153,7 @@ class FSM:
         """
         position = self.stream.tell()
 
-        data = self.stream.read(1)
+        data = self.read(1)
 
         for char in chars:
             if data == char:
@@ -158,7 +172,7 @@ class FSM:
         position = self.stream.tell()
 
         for char in string:
-            data = self.stream.read(1)
+            data = self.read(1)
 
             if char != data:
                 if rewind:
@@ -173,7 +187,7 @@ class FSM:
         result = []
 
         while 1:
-            data = self.stream.read(1)
+            data = self.read(1)
 
             if data in term_chars or data == "":
                 return "".join(result)
@@ -191,7 +205,7 @@ class FSM:
         result = []
 
         while 1:
-            data = self.stream.read(1)
+            data = self.read(1)
 
             if data not in legal_chars or data == "":
                 return "".join(result)

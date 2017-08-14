@@ -27,22 +27,28 @@ class FileAnalyzer(Actor):
 
     async def on_message(self, message):
         """Obtain stream from input and perform analysis."""
-        path = message.get("path", None)
-        origin = message.get("url", None)
+        try:
+            path = message.get("path", None)
+            origin = message.get("url", None)
 
-        if not exists(path):
-            raise FileNotFound(path)
+            if not exists(path):
+                raise FileNotFound(path)
 
-        stream = open(path)
-        fsm = DocumentReaderFsm(stream)
+            stream = open(path)
+            fsm = DocumentReaderFsm(stream)
 
-        fsm.perform()
+            fsm.perform()
 
-        urls = self.parse_urls(origin, fsm.matches)
-        message.update({"urls": urls})
+            urls = self.parse_urls(origin, fsm.matches)
+            message.update({"urls": urls})
 
-        log.info("Extracted {} urls from {}".format(len(urls), origin))
-        await self.publish(message)
+            log.info("Extracted {} urls from {}".format(len(urls), origin))
+            log.info("Analyzer publishes {}".format(message))
+
+            await self.publish(message)
+        except Exception as e:
+            log.info("Analyzer got exception {} with message {}".format(e, message))
+            raise
 
     def parse_urls(self, origin_url, urls):
         """Get complete absolute URL set."""
@@ -79,7 +85,11 @@ class FileAnalyzer(Actor):
                 domains_match = True
 
         if not domains_match:
-            tokens[NETLOC] = tokens[NETLOC].encode("idna").decode("utf-8")
+            try:
+                tokens[NETLOC] = tokens[NETLOC].encode("idna").decode("utf-8")
+            except UnicodeError:
+                log.debug("Error analyzing {}".format(tokens[NETLOC]))
+                raise
 
         # Fill in the scheme
         if not tokens[SCHEME] and domains_match:

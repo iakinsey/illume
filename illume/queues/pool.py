@@ -2,6 +2,7 @@
 
 
 from illume.error import QueueError
+from illume.log import log
 
 
 class PooledActor:
@@ -41,18 +42,18 @@ class PooledActor:
 
         self.actor = self.Actor(self.pooled_queue, self.outbox, self.loop)
         self.pooled_queue.set_pooled_actor(self)
-        self.loop.run_until_complete(self.actor.on_start())
+        self.loop.run_until_complete(self.actor.initialize())
         self.pooled_queue.init()
         self.loop.run_until_complete(self.stop())
 
     async def on_message(self, message):
         """Handle incoming message."""
-        await self.actor.initialize()
         await self.actor.on_message(message)
-        await self.actor.stop()
+
 
     async def stop(self):
         """Stop pooled actor."""
+        await self.actor.stop()
         await self.actor.on_stop()
         await self.pooled_queue.stop()
 
