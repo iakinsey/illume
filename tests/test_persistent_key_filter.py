@@ -23,7 +23,7 @@ class TestPersistentKeyFilter:
         filter._init_db()
 
         # Check that schema exists
-        assert filter._check_if_tables_exist()
+        assert filter.check_if_tables_exist()
 
 
     def test_add_and_check(self):

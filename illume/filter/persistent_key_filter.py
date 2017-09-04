@@ -1,10 +1,8 @@
 """Persistent key filter."""
 
 
-from illume.error import DatabaseCorrupt, QueryError
-from illume.util import create_dir
-from os.path import dirname, exists
-from sqlite3 import connect
+from illume.db import SqliteDB
+from illume.error import QueryError
 
 
 SCHEMA = [
@@ -45,7 +43,7 @@ CHECKER_BOTH = "SELECT 1 FROM filter WHERE domain = ? AND url = ?"
 CHECKER_MULTI = "SELECT domain, url FROM filter WHERE "
 
 
-class PersistentKeyFilter(object):
+class PersistentKeyFilter(SqliteDB):
 
     """
     Persistent uniqueness filter for domains and URLs.
@@ -55,40 +53,17 @@ class PersistentKeyFilter(object):
         key_size (int): Size of columns used to store hashes.
     """
 
-    _db_conn = None
-
     def __init__(self, path, key_size=8):
         self.path = path
         self.key_size = key_size
 
-    @property
-    def conn(self):
-        """Database connection."""
-        if self._db_conn is None:
-            self._init_db()
-
-        return self._db_conn
-
-    def _init_db(self):
-        """Initialize database, create if it doesn't exist."""
-        db_exists = exists(self.path)
-        create_dir(dirname(self.path))
-        self._db_conn = connect(self.path)
-
-        if not db_exists:
-            # Database needs to be set up.
-            self._create_db()
-        elif not self._check_if_tables_exist():
-            # Database is corrupt.
-            raise DatabaseCorrupt("Tables out of sync.")
-
-    def _check_if_tables_exist(self):
+    def check_if_tables_exist(self):
         """Assert existence of tables."""
         result = self._db_conn.execute(CHECKER)
 
         return sum(1 for x in result) == len(SCHEMA)
 
-    def _create_db(self):
+    def create_db(self):
         """Create database."""
         table = SCHEMA[0].format(key_size=self.key_size)
         queries = (table,) + tuple(SCHEMA[1:])
@@ -98,10 +73,6 @@ class PersistentKeyFilter(object):
 
             for query in queries:
                 cursor.execute(query)
-
-    def create_cursor(self):
-        """Database cursor."""
-        return self.conn.cursor()
 
     def add(self, domain, url, cursor=None):
         """Add domain and url pairing to database."""
