@@ -400,7 +400,7 @@ class TestSocketInteraction(IllumeTest):
         server_thread = Thread(target=run_server, daemon=True)
 
         server_thread.start()
-
+        sleep(1)
         # start 100 clients
         client_loop.run_until_complete(run_client())
 
