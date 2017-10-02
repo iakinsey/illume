@@ -1,7 +1,9 @@
-from setuptools import setup, Extension
 import os
+import shlex
 import sys
+
 from setuptools.command.test import test
+from setuptools import setup, Extension
 
 
 NAME = 'illume'
@@ -41,7 +43,7 @@ class RunTests(test):
         remove_or_ignore_dir(data_dir)
         cov.start()
 
-        exit_code = main(self.pytest_args)
+        exit_code = main(shlex.split(self.pytest_args or ""))
 
         cov.stop()
         cov.xml_report()

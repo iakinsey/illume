@@ -6,7 +6,7 @@ from asyncio import Queue, FIRST_COMPLETED, start_unix_server, sleep
 from asyncio import new_event_loop
 from copy import copy
 from illume import config
-from illume.error import TaskComplete
+from illume.error import TaskComplete, QueueError
 from illume.log import log
 from illume.queues.base import GeneratorQueue
 from illume.queues.pool import PooledQueue, PooledActor

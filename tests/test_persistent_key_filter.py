@@ -111,7 +111,6 @@ class TestPersistentKeyFilter:
             domains.remove(domain)
             urls.remove(url)
 
-
         assert len(domains) == 0
         assert len(urls) == 0
 

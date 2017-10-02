@@ -19,3 +19,6 @@ TEMP_PREFIX = "illume-test-"
 
 FETCHER_OUTPUT_DIRECTORY = shard_path("fetcher")
 FETCHER_PROGRESS_DIR = shard_path("progress")
+
+
+GRAPH_DB_PATH = "{}-{}".format(in_data("graph"), SHARD_ID)
