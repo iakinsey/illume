@@ -24,7 +24,7 @@ class TestLogger(IllumeTest):
         actor = MockActor(inbox, outbox, loop=loop)
         url = "http://origin.com"
         urls = set("http://test{}.com".format(n) for n in range(count))
-        message = {"url": url, "urls": urls}
+        message = {"url": url, "urls": [{"url": u} for u in urls]}
 
         async def perform():
             await inbox.put(message)

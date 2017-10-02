@@ -32,8 +32,14 @@ class CompoundQueue(GeneratorQueue):
 
     @dies_on_stop_event
     async def put(self, data):
+        await self.setup()
         await self.ready.wait()
         await self.do_action("put", (data,))
+
+    async def setup(self):
+        """Setup the client."""
+        if not self.ready.is_set():
+            await self.start()
 
     async def stop(self):
         """Stop queue."""

@@ -68,8 +68,10 @@ def check_alloc_size(size, name=None):
         })
 
 
-def get_temp_file_name():
-    prefix = config.get("TEMP_PREFIX")
+def get_temp_file_name(prefix=None):
+    if prefix is None:
+        prefix = config.get("TEMP_PREFIX")
+
     suffix = "-{}".format(uuid1())
 
     return mktemp(prefix=prefix, suffix=suffix)
