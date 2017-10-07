@@ -15,6 +15,7 @@ class KeyFilter(Actor):
     """Frontier url/domain filter actor."""
 
     def on_init(self):
+        self.domain_whitelist = config.get("FRONTIER_DOMAIN_WHITELIST")
         self.init_bloom_filters()
         self.init_persistent_key_filter()
         self.populate_bloom_filters()
@@ -61,6 +62,9 @@ class KeyFilter(Actor):
         domain = url_map['domain']
         override = url_map.get('override', False)
         recrawl = url_map.get('recrawl', False)
+
+        if self.domain_whitelist and domain in self.domain_whitelist:
+            return 0
 
         domain_is_known = self.exists_domain(domain)
         url_is_known = False
